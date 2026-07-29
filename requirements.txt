@@ -1,4 +1,0 @@
-backtesting
-pandas
-numpy
-matplotlib

@@ -1,0 +1,3 @@
+# META
+MARGIN = 0.01
+CASH = 10_000

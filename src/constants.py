@@ -1,6 +1,7 @@
 # META
 MARGIN = 0.01
-CASH = 10_000
+CASH = 50_000
+COMMISSION = 0.00015
 
 SESSIONS = [
     {"name": "ASIAN", "start": "03:00:00", "end": "09:00:00"},

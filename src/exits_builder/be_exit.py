@@ -1,7 +1,8 @@
 import numpy as np
 
 
-def build_be_exits(data, signals, rr_ratio):
+def build_be_exits(data, signals, rr_ratio, sl_mult):
+    atr_np = signals["atr"].to_numpy(dtype=np.float64)
     high_np = data["High"].to_numpy(dtype=np.float64)
     low_np = data["Low"].to_numpy(dtype=np.float64)
     close_np = data["Close"].to_numpy(dtype=np.float64)
@@ -10,6 +11,8 @@ def build_be_exits(data, signals, rr_ratio):
     n = len(close_np)
     long_exits = np.zeros(n, dtype=bool)
     short_exits = np.zeros(n, dtype=bool)
+    # stop‑loss distance for each trade (initial risk amount)
+    sl_dists = np.full(n, np.nan, dtype=np.float64)
 
     pos = 0
     entry_price = np.nan
@@ -22,20 +25,31 @@ def build_be_exits(data, signals, rr_ratio):
             if long_in[i]:
                 pos = 1
                 entry_price = close_np[i]
-                risk = entry_price * 0.01
+                atr = atr_np[i]
+                risk = atr * sl_mult
                 sl_price = entry_price - risk
                 tp_price = entry_price + risk * rr_ratio
+                sl_dists[i] = risk
                 be_triggered = False
             elif short_in[i]:
                 pos = -1
                 entry_price = close_np[i]
-                risk = entry_price * 0.01
+                atr = atr_np[i]
+                risk = atr * sl_mult
                 sl_price = entry_price + risk
                 tp_price = entry_price - risk * rr_ratio
+                sl_dists[i] = risk
                 be_triggered = False
             continue
 
         if pos == 1:
+            if short_in[i]:
+                long_exits[i] = True
+                pos, entry_price, sl_price, tp_price, be_triggered = (
+                    0, np.nan, np.nan, np.nan, False,
+                )
+                continue
+
             be_level = entry_price + (tp_price - entry_price) * 0.5
             be_level = min(be_level, entry_price + (entry_price - sl_price))
 
@@ -45,11 +59,30 @@ def build_be_exits(data, signals, rr_ratio):
 
             if low_np[i] <= sl_price:
                 long_exits[i] = True
-                pos, entry_price, sl_price, tp_price, be_triggered = 0, np.nan, np.nan, np.nan, False
+                pos, entry_price, sl_price, tp_price, be_triggered = (
+                    0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    False,
+                )
             elif high_np[i] >= tp_price:
                 long_exits[i] = True
-                pos, entry_price, sl_price, tp_price, be_triggered = 0, np.nan, np.nan, np.nan, False
+                pos, entry_price, sl_price, tp_price, be_triggered = (
+                    0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    False,
+                )
         else:
+            if long_in[i]:
+                short_exits[i] = True
+                pos, entry_price, sl_price, tp_price, be_triggered = (
+                    0, np.nan, np.nan, np.nan, False,
+                )
+                continue
+
             be_level = entry_price - (entry_price - tp_price) * 0.5
             be_level = max(be_level, entry_price - (sl_price - entry_price))
 
@@ -59,9 +92,21 @@ def build_be_exits(data, signals, rr_ratio):
 
             if high_np[i] >= sl_price:
                 short_exits[i] = True
-                pos, entry_price, sl_price, tp_price, be_triggered = 0, np.nan, np.nan, np.nan, False
+                pos, entry_price, sl_price, tp_price, be_triggered = (
+                    0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    False,
+                )
             elif low_np[i] <= tp_price:
                 short_exits[i] = True
-                pos, entry_price, sl_price, tp_price, be_triggered = 0, np.nan, np.nan, np.nan, False
+                pos, entry_price, sl_price, tp_price, be_triggered = (
+                    0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    False,
+                )
 
-    return long_exits, short_exits
+    return long_exits, short_exits, sl_dists

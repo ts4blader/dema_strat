@@ -1,7 +1,11 @@
 # META
 MARGIN = 0.01
-CASH = 50_000
+
+# in usd
 COMMISSION = 0.00015
+CASH = 50_000
+RISK_PCT = 0.002  # ~100USD of 50K
+RISK_PER_TRADE = CASH * RISK_PCT
 
 SESSIONS = [
     {"name": "ASIAN", "start": "03:00:00", "end": "09:00:00"},

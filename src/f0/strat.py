@@ -34,6 +34,7 @@ class STRAT:
         self.atr_p = atr_p
 
         self.data = data
+        self.freq = self.data.index.to_series().diff().median()
 
     def _make_signals(self):
         data = self.data
@@ -81,11 +82,8 @@ class STRAT:
         long_signal = signals["long"].to_numpy()
         short_signal = signals["short"].to_numpy()
 
-        # vbt wants float64 for size/close; cast just the columns it needs.
-        close_np = self.data["Close"].to_numpy(dtype=np.float64)
-
         portfolio = vbt.Portfolio.from_signals(
-            close=close_np,
+            close=self.data["Close"],
             entries=long_signal,
             exits=long_exits,
             short_entries=short_signal,

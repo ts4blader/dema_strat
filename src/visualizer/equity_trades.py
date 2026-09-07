@@ -1,9 +1,8 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import pandas as pd
 
 
-def equity_trades_visualizer(data, signals, portfolio, N=500):
+def trades_visualizer(data, signals, portfolio, N=500):
     slc = data.iloc[:N]
     sig = signals.iloc[:N]
     trades = portfolio.trades.records_readable
@@ -35,7 +34,7 @@ def equity_trades_visualizer(data, signals, portfolio, N=500):
             y=sig["ema"],
             mode="lines",
             name="EMA",
-            line=dict(width=1, color="dodgerblue"),
+            line={"width": 1, "color": "dodgerblue"},
         ),
         row=1,
         col=1,
@@ -47,7 +46,7 @@ def equity_trades_visualizer(data, signals, portfolio, N=500):
             y=sig["smoothed"],
             mode="lines",
             name="Smoothed",
-            line=dict(width=1, color="orange"),
+            line={"width": 1, "color": "orange"},
         ),
         row=1,
         col=1,
@@ -60,7 +59,7 @@ def equity_trades_visualizer(data, signals, portfolio, N=500):
                 y=slc["VWAP"],
                 mode="lines",
                 name="VWAP",
-                line=dict(width=1, dash="dot", color="gray"),
+                line={"width": 1, "dash": "dot", "color": "gray"},
             ),
             row=1,
             col=1,
@@ -78,7 +77,7 @@ def equity_trades_visualizer(data, signals, portfolio, N=500):
                 y=y,
                 mode="markers",
                 name=name,
-                marker=dict(symbol=symbol, size=9, color=color),
+                marker={"symbol": symbol, "size": 9, "color": color},
             ),
             row=1,
             col=1,
@@ -125,7 +124,11 @@ def equity_trades_visualizer(data, signals, portfolio, N=500):
     ]
 
     for cfg in markers:
-        ts_list = entry_ts[cfg["direction"]] if cfg["type"] == "entry" else exit_ts[cfg["direction"]]
+        ts_list = (
+            entry_ts[cfg["direction"]]
+            if cfg["type"] == "entry"
+            else exit_ts[cfg["direction"]]
+        )
         mask = slc.index.isin(ts_list)
         if mask.any():
             _add_marker(
@@ -135,25 +138,19 @@ def equity_trades_visualizer(data, signals, portfolio, N=500):
                 symbol=cfg["symbol"],
                 color=cfg["color"],
             )
-        
-
-
-    equity_fig = portfolio.value().vbt.plot()
-    equity_fig.update_layout(
-        title=f"Equity curve",
-        xaxis_rangeslider_visible=False,
-        height=400,
-        template="plotly_dark",
-        legend=dict(orientation="v", y=0.5, x=1.02, xanchor="left", yanchor="middle"),
-    )
-    equity_fig.show()
 
     fig.update_layout(
         title=f"DEMA Strategy – First {N} Candles",
         xaxis_rangeslider_visible=False,
         height=500,
         template="plotly_dark",
-        legend=dict(orientation="v", y=0.5, x=1.02, xanchor="left", yanchor="middle"),
+        legend={
+            "orientation": "v",
+            "y": 0.5,
+            "x": 1.02,
+            "xanchor": "left",
+            "yanchor": "middle",
+        },
     )
     fig.update_yaxes(title_text="Price")
     fig.show()

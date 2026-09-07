@@ -66,68 +66,77 @@ def equity_trades_visualizer(data, signals, portfolio, N=500):
             col=1,
         )
 
-    long_trades = trades_cap[trades_cap["Direction"] == "Long"]
-    short_trades = trades_cap[trades_cap["Direction"] == "Short"]
+    # combine entry and exit timestamps per direction
+    entry_ts = trades_cap.groupby("Direction")["Entry Timestamp"].apply(list).to_dict()
+    exit_ts = trades_cap.groupby("Direction")["Exit Timestamp"].apply(list).to_dict()
 
-    long_trade_entries = long_trades["Entry Timestamp"]
-    long_trade_exits = long_trades["Exit Timestamp"]
+    # helper to add marker traces with common args
+    def _add_marker(x, y, name, symbol, color):
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="markers",
+                name=name,
+                marker=dict(symbol=symbol, size=9, color=color),
+            ),
+            row=1,
+            col=1,
+        )
 
-    short_trade_entries = short_trades["Entry Timestamp"]
-    short_trade_exits = short_trades["Exit Timestamp"]
+    # configuration for markers
+    markers = [
+        {
+            "direction": "Long",
+            "type": "entry",
+            "ycol": "Low",
+            "mult": 0.999,
+            "symbol": "triangle-up",
+            "color": "lime",
+            "name": "Long Entry",
+        },
+        {
+            "direction": "Long",
+            "type": "exit",
+            "ycol": "High",
+            "mult": 1.001,
+            "symbol": "x",
+            "color": "lime",
+            "name": "Long Exit",
+        },
+        {
+            "direction": "Short",
+            "type": "entry",
+            "ycol": "High",
+            "mult": 1.001,
+            "symbol": "triangle-down",
+            "color": "red",
+            "name": "Short Entry",
+        },
+        {
+            "direction": "Short",
+            "type": "exit",
+            "ycol": "Low",
+            "mult": 0.999,
+            "symbol": "x",
+            "color": "red",
+            "name": "Short Exit",
+        },
+    ]
 
-    long_mask = slc.index.isin(long_trade_entries.values)
-    long_exit_mask = slc.index.isin(long_trade_exits.values)
+    for cfg in markers:
+        ts_list = entry_ts[cfg["direction"]] if cfg["type"] == "entry" else exit_ts[cfg["direction"]]
+        mask = slc.index.isin(ts_list)
+        if mask.any():
+            _add_marker(
+                x=slc.index[mask],
+                y=slc[cfg["ycol"]].loc[mask].values * cfg["mult"],
+                name=cfg["name"],
+                symbol=cfg["symbol"],
+                color=cfg["color"],
+            )
+        
 
-    short_mask = slc.index.isin(short_trade_entries.values)
-    short_exit_mask = slc.index.isin(short_trade_exits.values)
-
-    fig.add_trace(
-        go.Scatter(
-            x=slc.index[long_mask],
-            y=slc["Low"].loc[long_mask].values * 0.999,
-            mode="markers",
-            name="Long Entry",
-            marker=dict(symbol="triangle-up", size=9, color="lime"),
-        ),
-        row=1,
-        col=1,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=slc.index[long_exit_mask],
-            y=slc["High"].loc[long_exit_mask].values * 1.001,
-            mode="markers",
-            name="Long Exit",
-            marker=dict(symbol="x", size=9, color="lime"),
-        ),
-        row=1,
-        col=1,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=slc.index[short_mask],
-            y=slc["High"].loc[short_mask].values * 1.001,
-            mode="markers",
-            name="Short Entry",
-            marker=dict(symbol="triangle-down", size=9, color="red"),
-        ),
-        row=1,
-        col=1,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=slc.index[short_exit_mask],
-            y=slc["Low"].loc[short_exit_mask].values * 0.999,
-            mode="markers",
-            name="Short Exit",
-            marker=dict(symbol="x", size=9, color="red"),
-        ),
-        row=1,
-        col=1,
-    )
 
     equity_fig = portfolio.value().vbt.plot()
     equity_fig.update_layout(

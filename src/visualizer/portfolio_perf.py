@@ -173,6 +173,7 @@ def portfolio_perf_visualizer(portfolio, show: bool = True) -> go.Figure:
         xaxis={"range": [start, end], "type": "date"},
         showlegend=False,
         height=FIG_HEIGHT,
+        bargap=0.2,
     )
 
     equity_series = portfolio.value()

@@ -1,12 +1,17 @@
-from .loader import load_ohlcv
+import math
+import sys
 from pathlib import Path
+
 import pandas as pd
 import vectorbt as vbt
-import sys
-import math
 
-sys.path.insert(0, str(Path(".").resolve().parent))
+from .loader import load_ohlcv
+
+sys.path.insert(0, str(Path.cwd().parent))
 from constants import TABLE_STYLES
+import sqlite3
+from itertools import product
+from pathlib import Path
 
 
 def load_data_and_split(path, split_ratio=0.8):
@@ -41,6 +46,8 @@ def stats_pretiier(stats):
         "return_pct": "Total Return [%]",
         "num_trades": "Total Trades",
         "max_dd": "Max Drawdown [%]",
+        "fee": "Total Fees Paid",
+        "expectancy": "Expectancy",
     }
     return {k: stats.get(v) for k, v in mapping.items()}
 
@@ -65,6 +72,7 @@ def compare_benchmark(portfolio, data, freq="1d"):
         "Profit Factor",
         "Total Trades",
         "Win Rate [%]",
+        "Total Fees Paid",
     ]
 
     def format_smart(x):
@@ -85,3 +93,12 @@ def compare_benchmark(portfolio, data, freq="1d"):
             na_rep="N/A",  # Cleanly replaces NaN values
         ).set_table_styles(TABLE_STYLES)
     )
+
+
+def db_connect():
+
+    db_path = Path("../backtest_results.db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    return conn, cursor

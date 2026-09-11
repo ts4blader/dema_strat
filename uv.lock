@@ -302,6 +302,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "quantstats" },
     { name = "tabulate" },
+    { name = "tqdm" },
     { name = "vectorbt" },
 ]
 
@@ -321,6 +322,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=18.0.0" },
     { name = "quantstats", specifier = ">=0.0.81" },
     { name = "tabulate", specifier = ">=0.10.0" },
+    { name = "tqdm", specifier = ">=4.70.0" },
     { name = "vectorbt", specifier = ">=0.5.0" },
 ]
 

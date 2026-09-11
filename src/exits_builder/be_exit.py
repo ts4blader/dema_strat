@@ -46,7 +46,11 @@ def build_be_exits(data, signals, rr_ratio, sl_mult):
             if short_in[i]:
                 long_exits[i] = True
                 pos, entry_price, sl_price, tp_price, be_triggered = (
-                    0, np.nan, np.nan, np.nan, False,
+                    0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    False,
                 )
                 continue
 
@@ -57,16 +61,7 @@ def build_be_exits(data, signals, rr_ratio, sl_mult):
                 sl_price = entry_price
                 be_triggered = True
 
-            if low_np[i] <= sl_price:
-                long_exits[i] = True
-                pos, entry_price, sl_price, tp_price, be_triggered = (
-                    0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    False,
-                )
-            elif high_np[i] >= tp_price:
+            if low_np[i] <= sl_price or high_np[i] >= tp_price:
                 long_exits[i] = True
                 pos, entry_price, sl_price, tp_price, be_triggered = (
                     0,
@@ -79,7 +74,11 @@ def build_be_exits(data, signals, rr_ratio, sl_mult):
             if long_in[i]:
                 short_exits[i] = True
                 pos, entry_price, sl_price, tp_price, be_triggered = (
-                    0, np.nan, np.nan, np.nan, False,
+                    0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    False,
                 )
                 continue
 
@@ -90,16 +89,7 @@ def build_be_exits(data, signals, rr_ratio, sl_mult):
                 sl_price = entry_price
                 be_triggered = True
 
-            if high_np[i] >= sl_price:
-                short_exits[i] = True
-                pos, entry_price, sl_price, tp_price, be_triggered = (
-                    0,
-                    np.nan,
-                    np.nan,
-                    np.nan,
-                    False,
-                )
-            elif low_np[i] <= tp_price:
+            if high_np[i] >= sl_price or low_np[i] <= tp_price:
                 short_exits[i] = True
                 pos, entry_price, sl_price, tp_price, be_triggered = (
                     0,

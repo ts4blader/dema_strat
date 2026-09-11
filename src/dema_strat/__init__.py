@@ -1,10 +1,13 @@
+from .grid_tuning import grid_tuning
 from .loader import free, load_ohlcv
-from .utils import load_data_and_split, stats_pretiier, compare_benchmark
+from .utils import compare_benchmark, db_connect, load_data_and_split, stats_pretiier
 
 __all__ = [
-    "load_ohlcv",
-    "free",
-    "load_data_and_split",
-    "stats_pretiier",
     "compare_benchmark",
+    "db_connect",
+    "free",
+    "grid_tuning",
+    "load_data_and_split",
+    "load_ohlcv",
+    "stats_pretiier",
 ]

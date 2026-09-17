@@ -6,19 +6,28 @@ from plotly.subplots import make_subplots
 def combinations_compare_visualizer(
     first_data, second_data, chart_title, first_name, second_name
 ):
-    METRICS_TO_COMPARE = ["profit_factor", "winrate", "calmar_ratio", "max_dd"]
+    METRICS_TO_COMPARE = [
+        "profit_factor",
+        "winrate",
+        "calmar_ratio",
+        "sortino_ratio",
+        "return_pct",
+        "max_dd",
+    ]
 
     # ── labels ──
     col_labels = {
         "profit_factor": "Profit Factor",
         "winrate": "Win Rate (%)",
         "calmar_ratio": "Calmar Ratio",
+        "sortino_ratio": "Sortino Ratio",
         "max_dd": "Max Drawdown (%)",
+        "return_pct": "Return (%)",
     }
 
-    # ── figure: 2×2 percent-normalized histograms ──
+    # ── figure: 2x3 percent-normalized histograms ──
     fig = make_subplots(
-        rows=2,
+        rows=3,
         cols=2,
         subplot_titles=[f"{col_labels[c]}" for c in METRICS_TO_COMPARE],
         horizontal_spacing=0.08,
@@ -130,7 +139,7 @@ def combinations_compare_visualizer(
             "x": 0.5,
             "xanchor": "center",
         },
-        height=700,
+        height=900,
         font_family="JetBrainsMono Nerd Font",
         bargap=0.2,
         template="plotly_dark",

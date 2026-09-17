@@ -13,6 +13,7 @@ dependencies = [
     "plotly>=6.9.0",
     "pyarrow>=18.0.0",
     "quantstats>=0.0.81",
+    "scikit-learn>=1.9.0",
     "tabulate>=0.10.0",
     "tqdm>=4.70.0",
     "vectorbt>=0.5.0",

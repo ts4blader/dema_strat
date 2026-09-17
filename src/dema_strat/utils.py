@@ -102,3 +102,12 @@ def db_connect():
     cursor = conn.cursor()
 
     return conn, cursor
+
+
+def global_style(df):
+    """Applies a unified dark-header corporate theme to any DataFrame."""
+    return (
+        df.style.hide(axis="index")  # Globally hide the index column
+        .set_table_styles(TABLE_STYLES)
+        .format(precision=2, thousands=",")
+    )  # Set standard number formatting

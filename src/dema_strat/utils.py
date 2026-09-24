@@ -8,10 +8,12 @@ import vectorbt as vbt
 from .loader import load_ohlcv
 
 sys.path.insert(0, str(Path.cwd().parent))
-from constants import TABLE_STYLES
 import sqlite3
-from itertools import product
 from pathlib import Path
+
+from IPython.display import display
+
+from constants import TABLE_STYLES
 
 
 def load_data_and_split(path, split_ratio=0.8):
@@ -52,41 +54,66 @@ def stats_pretiier(stats):
     return {k: stats.get(v) for k, v in mapping.items()}
 
 
-def compare_benchmark(portfolio, data, freq="1d"):
-    # benchmark
+SELECTED_METRICS = [
+    "Total Return [%]",
+    "Max Drawdown [%]",
+    "Sharpe Ratio",
+    "Sortino Ratio",
+    "Calmar Ratio",
+    "Profit Factor",
+    "Total Trades",
+    "Win Rate [%]",
+    "Total Fees Paid",
+]
+
+
+def format_smart(x):
+    if pd.isna(x) or x is None or math.isinf(x):
+        return "N/A"
+    if isinstance(x, (int, float)):
+        # If the number has no decimal part, format as an integer
+        if x == int(x):
+            return f"{int(x):,}"
+        # Otherwise, format with 3 decimal places
+        return f"{x:,.3f}"
+    return str(x)
+
+
+def benchmark_porfolio(data):
     buy_hold_entries = pd.Series(False, index=data.index)
     buy_hold_entries.iloc[0] = True
-    pf_benchmark = vbt.Portfolio.from_signals(data, buy_hold_entries, None, freq=freq)
+    freq = data.index.to_series().diff().median()
+
+    return vbt.Portfolio.from_signals(data, buy_hold_entries, None, freq=freq)
+
+
+def compare_benchmark_summary(portfolio_ios, portfolio_oos, data_ios, data_oos):
+    benchmark_ios = benchmark_porfolio(data_ios)
+    benchmark_oos = benchmark_porfolio(data_oos)
+
+    pf_all = pd.DataFrame(
+        {
+            "IOS": portfolio_ios.stats(),
+            "OOS": portfolio_oos.stats(),
+            "BENCHMARK IOS": benchmark_ios.stats(),
+            "BENCHMARK OOS": benchmark_oos.stats(),
+        }
+    )
+
+    pf_custom = pf_all.loc[SELECTED_METRICS]
+    display(global_style(pf_custom))
+
+
+def compare_benchmark(portfolio, data):
+    # benchmark
+    pf_benchmark = benchmark_porfolio(data)
 
     # Combine stats side-by-side
     pf_all = pd.DataFrame(
         {"STRATEGY": portfolio.stats(), "BENCHMARK": pf_benchmark.stats()}
     )
 
-    selected_metrics = [
-        "Total Return [%]",
-        "Max Drawdown [%]",
-        "Sharpe Ratio",
-        "Sortino Ratio",
-        "Calmar Ratio",
-        "Profit Factor",
-        "Total Trades",
-        "Win Rate [%]",
-        "Total Fees Paid",
-    ]
-
-    def format_smart(x):
-        if pd.isna(x) or x is None or math.isinf(x):
-            return "N/A"
-        if isinstance(x, (int, float)):
-            # If the number has no decimal part, format as an integer
-            if x == int(x):
-                return f"{int(x):,}"
-            # Otherwise, format with 3 decimal places
-            return f"{x:,.3f}"
-        return str(x)
-
-    pf_custom = pf_all.loc[selected_metrics]
+    pf_custom = pf_all.loc[SELECTED_METRICS]
     display(
         pf_custom.style.format(
             {"STRATEGY": format_smart, "BENCHMARK": format_smart},
@@ -106,8 +133,8 @@ def db_connect():
 
 def global_style(df):
     """Applies a unified dark-header corporate theme to any DataFrame."""
-    return (
-        df.style.hide(axis="index")  # Globally hide the index column
-        .set_table_styles(TABLE_STYLES)
-        .format(precision=2, thousands=",")
+    return df.style.set_table_styles(TABLE_STYLES).format(
+        precision=2,
+        thousands=",",
+        na_rep="N/A",
     )  # Set standard number formatting

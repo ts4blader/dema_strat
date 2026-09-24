@@ -2,6 +2,7 @@ from .grid_tuning import grid_tuning
 from .loader import free, load_ohlcv
 from .utils import (
     compare_benchmark,
+    compare_benchmark_summary,
     db_connect,
     global_style,
     load_data_and_split,
@@ -10,6 +11,7 @@ from .utils import (
 
 __all__ = [
     "compare_benchmark",
+    "compare_benchmark_summary",
     "db_connect",
     "free",
     "global_style",

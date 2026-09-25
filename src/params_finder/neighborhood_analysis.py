@@ -1,50 +1,47 @@
 import numpy as np
-import pandas as pd
 from IPython.display import display
 
 from dema_strat import global_style
 
 
-def neighborhood_analysis(df, PARAMS, TARGET):
-
-    param_cols = [p for p in PARAMS if p not in ("asset", "timeframe")]
+def neighborhood_analysis(df, PARAMS, TARGET, radius=1):
+    param_cols = list(PARAMS)
     df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=[TARGET])
 
     # rank each param onto integer grid coordinates (handles uneven spacing)
-    grid = df[param_cols].apply(lambda s: s.rank(method="dense").astype(int) - 1)
+    coords = (
+        df[param_cols]
+        .apply(lambda s: s.rank(method="dense").astype(int) - 1)
+        .to_numpy()
+    )
+    vals = df[TARGET].to_numpy()
 
-    def smooth(g, g_grid, radius=1):
-        coords = g_grid.to_numpy()
-        vals = g[TARGET].to_numpy()
-        out = np.empty(len(g))
-        for i in range(len(g)):
-            # neighbours = within `radius` steps on every axis simultaneously
-            mask = np.abs(coords - coords[i]).max(axis=1) <= radius
-            out[i] = vals[mask].mean()
-        return out
+    # precompute Chebyshev distance matrix → neighbour mask
+    # |coords[i] - coords[j]|_inf <= radius
+    dist = np.abs(coords[:, None, :] - coords[None, :, :]).max(axis=2)
+    mask = dist <= radius
 
-    res = []
-    for (asset, tf), g in df.groupby(["asset", "timeframe"]):
-        g = g.copy()
-        gg = grid.loc[g.index]
-        g["smoothed"] = smooth(g, gg)
-        g["n_neighbours"] = [
-            (np.abs(gg.to_numpy() - r).max(axis=1) <= 1).sum() for r in gg.to_numpy()
-        ]
-        res.append(g)
-
-    df = pd.concat(res)
+    df = df.copy()
+    df["smoothed"] = np.nanmean(np.where(mask, vals[None, :], np.nan), axis=1)
+    df["n_neighbours"] = mask.sum(axis=1)
 
     # edge combos have few neighbours — their smoothed value is unreliable
     core = df[df["n_neighbours"] >= 0.6 * df["n_neighbours"].max()]
+    core["score"] = (
+        core["smoothed"] * 0.7 + core[TARGET] * 0.3
+    )  # adjust weights to taste
 
-    print(f"Target: {TARGET}")
+    print(f"Target: {TARGET}, SCORE = smoothed * 0.7 + TARGET * 0.3")
     display(
         global_style(
-            core.nlargest(10, columns=["smoothed", TARGET])[
-                ["asset", "timeframe"]
-                + param_cols
-                + [TARGET, "smoothed", "n_neighbours"]
+            core.nlargest(10, columns=["score"])[
+                param_cols + [TARGET, "smoothed", "n_neighbours", "score"]
             ]
         )
     )
+
+    best = core.nlargest(1, columns=["score"]).iloc[0]
+    print("The best parameters combination: ")
+    display(best)
+
+    return best

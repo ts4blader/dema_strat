@@ -84,7 +84,9 @@ def benchmark_porfolio(data):
     buy_hold_entries.iloc[0] = True
     freq = data.index.to_series().diff().median()
 
-    return vbt.Portfolio.from_signals(data, buy_hold_entries, None, freq=freq)
+    return vbt.Portfolio.from_signals(
+        close=data["Close"], entries=buy_hold_entries, exits=None, freq=freq
+    )
 
 
 def compare_benchmark_summary(portfolio_ios, portfolio_oos, data_ios, data_oos):

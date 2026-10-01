@@ -23,6 +23,12 @@ TABLE_STYLES = [
             ("border-collapse", "collapse"),
         ],
     },
+    {
+        "selector": "table *",
+        "props": [
+            ("font-family", "JetBrainsMono Nerd Font"),
+        ],
+    },
     # Header cells (borders + padding)
     {
         "selector": "th",

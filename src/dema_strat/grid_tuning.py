@@ -22,6 +22,8 @@ def grid_tuning(params, table_name, run_backtest, data, replace_table=False):
         "Total Return [%]": "return_pct",
         "Total Trades": "n_trades",
         "Total Fees Paid": "fee",
+        "Avg Winning Trade [%]": "avg_win_trade",
+        "Avg Losing Trade [%]": "avg_lose_trade",
     }
 
     # build CREATE TABLE dynamically from params + result_mapping

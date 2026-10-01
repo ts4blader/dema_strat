@@ -66,7 +66,14 @@ def neighbours_for_radius(df, param_cols, radius, group_cols=("asset", "timefram
     return pd.concat(out_frames)
 
 
-def radius_diagnostics(df, PARAMS, TARGET, radii=(1, 2, 3, 4), saturation_tol=0.02):
+def radius_diagnostics(
+    df,
+    PARAMS,
+    TARGET,
+    radii=(1, 2, 3, 4),
+    saturation_tol=0.02,
+    min_axis_card=3,
+):
     """
     Sweep candidate radii and report neighbour-count stats to help pick
     the most 'effective' radius: one where n_neighbours varies meaningfully
@@ -74,7 +81,13 @@ def radius_diagnostics(df, PARAMS, TARGET, radii=(1, 2, 3, 4), saturation_tol=0.
     (saturation -> smoothing has swallowed whole parameter axes).
 
     saturation_tol: relative tolerance (on max-min spread vs the mean) below
-    which a radius is flagged as 'saturated' (looks uniform).
+    which a radius is flagged as fully 'saturated' (looks uniform).
+
+    min_axis_card: axes with fewer than this many unique values (e.g. binary
+    flags) are EXCLUDED from the "exceeds axis range" check. A 2-value axis
+    saturates at radius=1 unavoidably -- that's not oversmoothing, there's
+    simply no finer resolution possible on that axis. Only axes with real
+    resolution to lose should count against a radius.
     """
     param_cols = [p for p in PARAMS if p not in ("asset", "timeframe")]
     df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=[TARGET])
@@ -82,6 +95,7 @@ def radius_diagnostics(df, PARAMS, TARGET, radii=(1, 2, 3, 4), saturation_tol=0.
     # per-parameter number of unique tested values -> tells us when a radius
     # will start to span (or exceed) a whole axis
     axis_sizes = {p: df[p].nunique() for p in param_cols}
+    meaningful_axes = {p: s for p, s in axis_sizes.items() if s >= min_axis_card}
 
     rows = []
     for r in radii:
@@ -92,8 +106,10 @@ def radius_diagnostics(df, PARAMS, TARGET, radii=(1, 2, 3, 4), saturation_tol=0.
         rel_spread = spread / nn.mean() if nn.mean() else 0.0
         saturated = rel_spread < saturation_tol
 
-        # does this radius already exceed at least one axis's full range?
-        exceeds_axis = any((2 * r + 1) >= size for size in axis_sizes.values())
+        # does this radius already exceed a MEANINGFUL (non-binary-like) axis?
+        exceeds_meaningful_axis = any(
+            (2 * r + 1) >= size for size in meaningful_axes.values()
+        )
 
         rows.append(
             {
@@ -103,26 +119,32 @@ def radius_diagnostics(df, PARAMS, TARGET, radii=(1, 2, 3, 4), saturation_tol=0.
                 "n_neighbours_mean": round(nn.mean(), 1),
                 "rel_spread": round(rel_spread, 4),
                 "saturated": saturated,
-                "exceeds_some_axis_range": exceeds_axis,
+                "exceeds_meaningful_axis": exceeds_meaningful_axis,
             }
         )
 
     report = pd.DataFrame(rows)
 
-    # heuristic pick: smallest radius that (a) is NOT saturated and
-    # (b) does not already exceed an axis range, preferring the largest
-    # such radius for more averaging power (lower variance) without
-    # collapsing into a global average.
-    candidates = report[(~report["saturated"]) & (~report["exceeds_some_axis_range"])]
+    # pick the largest radius that (a) is not fully saturated and
+    # (b) has not yet exceeded any axis with real resolution to lose
+    # (ignoring low-cardinality/binary axes, which saturate trivially).
+    candidates = report[(~report["saturated"]) & (~report["exceeds_meaningful_axis"])]
     if len(candidates):
         recommended = candidates["radius"].max()
     else:
-        # fall back to the smallest radius tested if everything saturates
         recommended = report["radius"].min()
 
     print("Per-parameter unique tested values (axis sizes):")
     for p, size in axis_sizes.items():
-        print(f"  {p}: {size} unique values -> saturates around radius >= {size // 2}")
+        flag = (
+            "  <- low-cardinality, excluded from saturation check"
+            if size < min_axis_card
+            else ""
+        )
+        sat_r = -(-(size - 1) // 2)  # ceil((size-1)/2)
+        print(
+            f"  {p}: {size} unique values -> saturates around radius >= {sat_r}{flag}"
+        )
     print()
     print(report.to_string(index=False))
     print(f"\nRecommended radius: {recommended}")

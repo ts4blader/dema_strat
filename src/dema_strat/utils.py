@@ -140,3 +140,8 @@ def global_style(df):
         thousands=",",
         na_rep="N/A",
     )  # Set standard number formatting
+
+
+def compare_table(dictionary):
+    pf = pd.DataFrame(dictionary)
+    display(global_style(pf))
